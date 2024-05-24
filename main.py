@@ -153,10 +153,19 @@ def graphs(n, k, m, l):
     fr_ind50 /= k
     fr_ind100 /= k
 
+    write_array_to_csv(d10, f'd10.csv', 'a')
+    write_array_to_csv(d50, f'd50.csv', 'a')
+    write_array_to_csv(d100, f'd100.csv', 'a')
+    write_array_to_csv(fr_ind10, f'fr_ind10.csv', 'a')
+    write_array_to_csv(fr_ind50, f'fr_ind50.csv', 'a')
+    write_array_to_csv(fr_ind100, f'fr_ind100.csv', 'a')
+    write_array_to_csv(neig_deg10, f'neig_deg10.csv', 'a')
+    write_array_to_csv(neig_deg50, f'neig_deg50.csv', 'a')
+    write_array_to_csv(neig_deg100, f'neig_deg100.csv', 'a')
+
     deg_uniq1 = np.unique(deg_fin, return_counts=True)
     write_array_to_csv(deg_uniq1[0], f'degrees.csv', 'w')
     write_array_to_csv(deg_uniq1[1], f'degrees.csv', 'a')
-    # print(deg_uniq1)
     colors = ['r', 'g', 'b']
     styles = ['-', '--', ':']
     labels = ["i =10, m = {}, l = {}".format(m, l),
@@ -186,42 +195,40 @@ def graphs(n, k, m, l):
 
 
 def cluster(G):
-    for i in range(len(G)):
-        G[i] = np.array(G[i])
-    arr = []
-    for mas in G:
+    G = [np.array(g) for g in G]
+    arr = np.empty(len(G), dtype=float)
+    for h, mas in enumerate(G):
         d = dict(zip(mas, np.zeros(len(mas))))
         for i in mas:
             for j in G[i]:
                 if j in d:
                     d[j] += 1
-        arr.append(sum(d.values()) / (len(mas) - 1) / (len(mas) - 2))
-    return sum(arr) / len(arr)
+        arr[h] = sum(d.values()) / ((len(mas) - 1) * len(mas))
+    return np.mean(np.array(arr))
 
 
-def cluster_graph():
-    d1 = {}
-    d3 = {}
-    d5 = {}
-    for i in (3, 5, 10, 25):
-        G1 = barabasi_albert_graph(i, 1, 1000)[0]
-        d1[i] = cluster(G1)
-        G3 = barabasi_albert_graph(i, 3, 1000)[0]
-        d3[i] = cluster(G3)
-        G5 = barabasi_albert_graph(i, 5, 1000)[0]
-        d5[i] = cluster(G5)
-    plt.figure()
-    plt.plot(d1.keys(), d1.values())
-    plt.plot(d3.keys(), d3.values())
-    plt.plot(d5.keys(), d5.values())
-    plt.legend()
-    plt.show()
-
-
+def cluster_graph(n, k, arr):
+    keys = np.array(arr)
+    results = {
+        1: np.zeros(len(keys)),
+        3: np.zeros(len(keys)),
+        5: np.zeros(len(keys))
+    }
+    for h in range(k):
+        for i in range(len(keys)):
+            for key in results:
+                results[key][i] += cluster(barabasi_albert_graph(keys[i], key, n)[0])
+    matrix = []
+    lables = []
+    for l in results:
+        results[l] /= k
+        matrix.append((keys, results[l]))
+        lables.append("l = {}".format(l))
+    plots(matrix, r'$m$', r'$\overline{c}$', labels=lables)
 
 
 def main():
-    # cluster_graph()
+    cluster_graph(1000, 1, [2, 5, 10, 25])
     graphs(1000, 2, 3, 5)
 
 
