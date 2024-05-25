@@ -14,25 +14,20 @@ def average_neighbor_degree(G, n):
     return average_degree
 
 
-def dict_def(n):
-    return {
-        "d10": np.zeros(n),
-        "d50": np.zeros(n),
-        "d100": np.zeros(n),
-        "fr_ind10": np.zeros(n),
-        "fr_ind50": np.zeros(n),
-        "fr_ind100": np.zeros(n),
-        "neig_deg10": np.zeros(n),
-        "neig_deg50": np.zeros(n),
-        "neig_deg100": np.zeros(n)
-    }
+def dict_def(n, arr):
+    s = ["d", "fr_ind", "neig_deg"]
+    return {j+str(i): np.zeros(n) for i in arr for j in s}
 
 
-def barabasi_albert_graph(m, l, n):
+def barabasi_albert_graph(m, l, n, metr=None):
     G = complete_graph(n * l + m, m)
-    dict = dict_def(n - 100)
     repeated_nodes1 = [i for i in range(m)]
     repeated_nodes2 = [len(G[i]) for i in range(m)]
+    mx = n
+    dict = {}
+    if metr is not None:
+        mx = max(metr)
+        dict = dict_def(n - mx, metr)
     for h in range(n):
         source = h * l + m
         new_repeated_nodes = []
@@ -52,9 +47,9 @@ def barabasi_albert_graph(m, l, n):
         for i in range(source, source + l):
             repeated_nodes2.append(m + l - 1)
             repeated_nodes1.append(i)
-        if h >= 100:
-            h2 = h - 100
-            for i in [10, 50, 100]:
+        if h >= mx:
+            h2 = h - mx
+            for i in metr:
                 dict["d" + str(i)][h2] = len(G[i * l + m - 1])
                 dict["neig_deg" + str(i)][h2] = average_neighbor_degree(G, i * l + m - 1)
                 dict["fr_ind" + str(i)][h2] = dict["neig_deg" + str(i)][h2] / dict["d" + str(i)][h2]
@@ -62,10 +57,8 @@ def barabasi_albert_graph(m, l, n):
 
 
 def plots(m, xlabel, ylabel,
-          colors=['r', 'g', 'b'],
-          colors2=['c', 'm', 'y'],
-          styles=['-', '--', ':'],
-          labels=['i =10', 'i =50', 'i =100'],
+          styles=['-', '--', ':', '-.', 'dashdot'],
+          labels=['', '', '', '', ''],
           log=False,
           ):
     plt.figure(figsize=(10, 6))
@@ -74,7 +67,7 @@ def plots(m, xlabel, ylabel,
     flag = True
     for i, data in enumerate(m):
         x, y = data
-        color, style, label = colors[i], styles[i], labels[i]
+        style, label = styles[i], labels[i]
         if log:
             x = np.log(x)
             y = np.log(y)
@@ -86,22 +79,23 @@ def plots(m, xlabel, ylabel,
                 first_negative_index = np.where(yseq >= 0)[0][-1]
                 xseq = xseq[:first_negative_index]
                 yseq = yseq[:first_negative_index]
-                plt.plot(x, y, color=color, linestyle=style, label=label)
+                plt.plot(x, y, linestyle=style, label=label)
                 flag = False
                 lbl = f'$y ={a:.1f}log(d_i) {b:+.1f}$'
-            plt.plot(xseq, yseq, color=colors2[i], label=lbl)
+            plt.plot(xseq, yseq, label=lbl)
         if flag:
-            plt.plot(x, y, color=color, linestyle=style, label=label)
+            plt.plot(x, y,linestyle=style, label=label)
 
     plt.legend()
     plt.show()
 
 
 
-def graphs(n, k, m, l):
+def graphs(n, k, m, l, metr):
+    mx = max(metr)
     deg_fin = np.zeros(n * l + m)
-    d = np.arange(100, n)
-    dict = dict_def(n - 100)
+    d = np.arange(mx, n)
+    dict =dict_def(n - mx, metr)
 
     def write_array_to_csv(array, filename, s):
         with open(filename, s, newline='') as csvfile:
@@ -123,7 +117,7 @@ def graphs(n, k, m, l):
 
     for i in range(k):
         print(i)
-        G, dict_2 = barabasi_albert_graph(m, l, n)
+        G, dict_2 = barabasi_albert_graph(m, l, n, metr)
         for g in range(len(G)):
             deg_fin[g] += len(G[g])
 
@@ -140,10 +134,7 @@ def graphs(n, k, m, l):
     write_array_to_csv(deg_uniq1[0], f'degrees.csv', 'w')
     write_array_to_csv(deg_uniq1[1], f'degrees.csv', 'a')
 
-    labels = ["i =10, m = {}, l = {}".format(m, l),
-              "i =50, m = {}, l = {}".format(m, l),
-              "i =100, m = {}, l = {}".format(m, l)
-              ]
+    labels = ["i ={}, m = {}, l = {}".format(i, m, l) for i in metr]
     cluster(G)
     plots([deg_uniq1],
           r'$d_i$', r'$количество вершин$', labels=["m = {}, l = {}".format(m, l)])
@@ -151,10 +142,9 @@ def graphs(n, k, m, l):
           r'$d_i$', r'$количество вершин$', labels=["m = {}, l = {}".format(m, l)], log=True)
 
     for name, param in zip(["d", "neig_deg", "fr_ind"], [r'$d_i$', r'$\alpha_i$', r'$\beta_i$']):
-        plots([(d, dict[name + "10"]), (d, dict[name + "50"]), (d, dict[name + "100"])],
-              r'$t$', param, labels=labels)
-        plots([(d, dict[name + "10"]), (d, dict[name + "50"]), (d, dict[name + "100"])],
-              r'$t$', param, labels=labels, log=True)
+        mass = [(d, dict[name + str(i)]) for i in metr]
+        plots(mass, r'$t$', param, labels=labels)
+        plots(mass, r'$t$', param, labels=labels, log=True)
 
 
 def cluster(G):
@@ -170,13 +160,11 @@ def cluster(G):
     return np.mean(np.array(arr))
 
 
-def cluster_graph(n, k, arr):
-    keys = np.array(arr)
-    results = {
-        1: np.zeros(len(keys)),
-        3: np.zeros(len(keys)),
-        5: np.zeros(len(keys))
-    }
+def cluster_graph(n, k, arr_m, arr_l):
+    keys = np.array(arr_m)
+    results = {}
+    for i in arr_l:
+        results[i] = np.zeros(len(keys))
     for h in range(k):
         print(h)
         for i in range(len(keys)):
@@ -192,8 +180,8 @@ def cluster_graph(n, k, arr):
 
 
 def main():
-    # cluster_graph(1000, 10, [2, 5, 10, 25])
-    graphs(1000, 10, 3, 3)
+    cluster_graph(1000, 100, [2, 5, 10, 25], [1, 2, 3, 4, 5])
+    # graphs(1000, 5, 3, 3, [10, 50, 100])
 
 
 if __name__ == "__main__":
