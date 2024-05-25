@@ -16,7 +16,7 @@ def average_neighbor_degree(G, n):
 
 def dict_def(n, arr):
     s = ["d", "fr_ind", "neig_deg"]
-    return {j+str(i): np.zeros(n) for i in arr for j in s}
+    return {j + str(i): np.zeros(n) for i in arr for j in s}
 
 
 def barabasi_albert_graph(m, l, n, metr=None):
@@ -24,10 +24,10 @@ def barabasi_albert_graph(m, l, n, metr=None):
     repeated_nodes1 = [i for i in range(m)]
     repeated_nodes2 = [len(G[i]) for i in range(m)]
     mx = n
-    dict = {}
+    dict_metr = {}
     if metr is not None:
         mx = max(metr)
-        dict = dict_def(n - mx, metr)
+        dict_metr = dict_def(n - mx, metr)
     for h in range(n):
         source = h * l + m
         new_repeated_nodes = []
@@ -50,10 +50,10 @@ def barabasi_albert_graph(m, l, n, metr=None):
         if h >= mx:
             h2 = h - mx
             for i in metr:
-                dict["d" + str(i)][h2] = len(G[i * l + m - 1])
-                dict["neig_deg" + str(i)][h2] = average_neighbor_degree(G, i * l + m - 1)
-                dict["fr_ind" + str(i)][h2] = dict["neig_deg" + str(i)][h2] / dict["d" + str(i)][h2]
-    return G, dict
+                dict_metr["d" + str(i)][h2] = len(G[i * l + m - 1])
+                dict_metr["neig_deg" + str(i)][h2] = average_neighbor_degree(G, i * l + m - 1)
+                dict_metr["fr_ind" + str(i)][h2] = dict_metr["neig_deg" + str(i)][h2] / dict_metr["d" + str(i)][h2]
+    return G, dict_metr
 
 
 def plots(m, xlabel, ylabel,
@@ -84,31 +84,30 @@ def plots(m, xlabel, ylabel,
                 lbl = f'$y ={a:.1f}log(d_i) {b:+.1f}$'
             plt.plot(xseq, yseq, label=lbl)
         if flag:
-            plt.plot(x, y,linestyle=style, label=label)
+            plt.plot(x, y, linestyle=style, label=label)
 
     plt.legend()
     plt.show()
-
 
 
 def graphs(n, k, m, l, metr):
     mx = max(metr)
     deg_fin = np.zeros(n * l + m)
     d = np.arange(mx, n)
-    dict =dict_def(n - mx, metr)
+    dict = dict_def(n - mx, metr)
 
     def write_array_to_csv(array, filename, s):
         with open(filename, s, newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(array)
 
-    def write_arrays_to_csv(dict, s, arr=None):
-        for key in dict:
-            filename = f'{key}.csv'
+    def write_arrays_to_csv(dict_metr, s, arr=None):
+        for metr in dict_metr:
+            filename = f'{metr}.csv'
             with open(filename, s, newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 if arr is None:
-                    writer.writerow(dict[key])
+                    writer.writerow(dict_metr[metr])
 
                 else:
                     writer.writerow(arr)
@@ -171,12 +170,12 @@ def cluster_graph(n, k, arr_m, arr_l):
             for key in results:
                 results[key][i] += cluster(barabasi_albert_graph(keys[i], key, n)[0])
     matrix = []
-    lables = []
+    labels = []
     for l in results:
         results[l] /= k
         matrix.append((keys, results[l]))
-        lables.append("l = {}".format(l))
-    plots(matrix, r'$m$', r'$\overline{c}$', labels=lables)
+        labels.append("l = {}".format(l))
+    plots(matrix, r'$m$', r'$\overline{c}$', labels=labels)
 
 
 def main():
