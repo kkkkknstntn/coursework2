@@ -90,11 +90,11 @@ def plots(m, xlabel, ylabel,
     plt.show()
 
 
-def graphs(n, k, m, l, metr):
-    mx = max(metr)
+def graphs(n, k, m, l, metrics):
+    mx = max(metrics)
     deg_fin = np.zeros(n * l + m)
     d = np.arange(mx, n)
-    dict = dict_def(n - mx, metr)
+    dict_metr = dict_def(n - mx, metrics)
 
     def write_array_to_csv(array, filename, s):
         with open(filename, s, newline='') as csvfile:
@@ -112,36 +112,30 @@ def graphs(n, k, m, l, metr):
                 else:
                     writer.writerow(arr)
 
-    write_arrays_to_csv(dict, 'w', d)
-
+    write_arrays_to_csv(dict_metr, 'w', d)
     for i in range(k):
         print(i)
-        G, dict_2 = barabasi_albert_graph(m, l, n, metr)
+        G, dict_2 = barabasi_albert_graph(m, l, n, metrics)
         for g in range(len(G)):
             deg_fin[g] += len(G[g])
-
-        for key in dict:
-            dict[key] += dict_2[key]
+        for key in dict_metr:
+            dict_metr[key] += dict_2[key]
         write_arrays_to_csv(dict_2, 'a')
-
-    for key in dict:
-        dict[key] /= k
+    for key in dict_metr:
+        dict_metr[key] /= k
     deg_fin /= k
-
-    write_arrays_to_csv(dict, 'a')
+    write_arrays_to_csv(dict_metr, 'a')
     deg_uniq1 = np.unique(deg_fin, return_counts=True)
     write_array_to_csv(deg_uniq1[0], f'degrees.csv', 'w')
     write_array_to_csv(deg_uniq1[1], f'degrees.csv', 'a')
-
-    labels = ["i ={}, m = {}, l = {}".format(i, m, l) for i in metr]
+    labels = ["i ={}, m = {}, l = {}".format(i, m, l) for i in metrics]
     cluster(G)
     plots([deg_uniq1],
           r'$d_i$', r'$количество вершин$', labels=["m = {}, l = {}".format(m, l)])
     plots([deg_uniq1],
           r'$d_i$', r'$количество вершин$', labels=["m = {}, l = {}".format(m, l)], log=True)
-
     for name, param in zip(["d", "neig_deg", "fr_ind"], [r'$d_i$', r'$\alpha_i$', r'$\beta_i$']):
-        mass = [(d, dict[name + str(i)]) for i in metr]
+        mass = [(d, dict_metr[name + str(i)]) for i in metrics]
         plots(mass, r'$t$', param, labels=labels)
         plots(mass, r'$t$', param, labels=labels, log=True)
 
@@ -169,8 +163,7 @@ def cluster_graph(n, k, arr_m, arr_l):
         for i in range(len(keys)):
             for key in results:
                 results[key][i] += cluster(barabasi_albert_graph(keys[i], key, n)[0])
-    matrix = []
-    labels = []
+    matrix, labels = [], []
     for l in results:
         results[l] /= k
         matrix.append((keys, results[l]))
@@ -179,7 +172,7 @@ def cluster_graph(n, k, arr_m, arr_l):
 
 
 def main():
-    cluster_graph(1000, 100, [2, 5, 10, 25], [1, 2, 3, 4, 5])
+    cluster_graph(1000, 100, [2, 5, 10, 25], [1, 3,  5])
     # graphs(1000, 5, 3, 3, [10, 50, 100])
 
 
